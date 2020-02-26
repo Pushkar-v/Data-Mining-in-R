@@ -1,0 +1,124 @@
+---
+title: "Homework 2"
+author: "Team 18"
+date: "10/19/2019"
+output:
+   pdf_document:
+     toc: TRUE
+     toc_depth: 3
+---
+\newpage 
+## The Problem Given and Our Approach
+### Our Task
+Our consulting team was contracted to provide Sun Country with non-obvious patterns to better understand the airline’s customers while addressing the challenges they articulate. Currently, Sun Country relies on anecdotes to differentiate their customers instead of a practice of rigor. The challenge in this task is that there are multiple patterns available to observe. In order to best aid Sun Country in making informed decisions to better understand the customers, our consulting team provides a high-level overview of the general customer qualities amongst all Sun Country passengers and then focus on the analysis. Limiting our analysis to a specific level of success will allow us to provide Sun Country with concise insights.
+
+
+
+``````{r message=FALSE,echo=FALSE, eval = FALSE}
+library(magrittr)
+library(RSQLite)
+library(DBI)
+library(tidyr)
+library(tidyverse)
+library(classInt)
+library(Hmisc)
+library(ggplot2)
+library(dplyr)
+df <- read.csv('SunCountry.csv')
+
+df1 <- df %>%
+  filter(TotalDocAmt != 0) %>%
+  #group_by(PNRLocatorID, TotalDocAmt) %>%
+  #summarise(count = n()) %>%
+  group_by(PNRLocatorID, BookingChannel) %>%
+  summarise(avg_doc_price = mean(TotalDocAmt))
+
+channel <- df %>%
+  filter(TotalDocAmt != 0) %>%
+  mutate(flag = ifelse(BookingChannel == 'SCA Website Booking', 'SCA Website', 'Others')) %>%
+  select(PNRLocatorID, BookingChannel, flag) %>%
+  group_by(PNRLocatorID, BookingChannel) %>%
+  distinct()
+
+df2 <- merge(df1, channel, by = c('PNRLocatorID', 'BookingChannel'), all = TRUE)
+
+# number of PNR by different channels
+PNR_count <- df2 %>%
+  group_by(BookingChannel) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  slice(1:5)
+
+ggplot(PNR_count, aes(BookingChannel, count)) + 
+  geom_bar(stat="identity")  + 
+  scale_y_continuous(name="Number of Booking", limits = c(0, 600000), labels = scales::comma) +
+  ggtitle('Number of Booking across top 5 Channel') +
+  geom_text(aes(label= count), position=position_dodge(width=0.9), vjust= -0.20) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 15, hjust = 1))
+
+# number of PNR of SCA and Other channels
+SCA_count <- df2 %>%
+  group_by(flag) %>%
+  summarise(num = n())
+
+SCA_count$flag <- factor(SCA_count$flag)
+
+ggplot(SCA_count, aes(flag, num)) + 
+  geom_bar(stat="identity", width = 0.25) +
+  scale_y_continuous(name="Number of Booking", limits = c(0, 600000), labels = scales::comma) + 
+  geom_text(aes(label= num), position=position_dodge(width=0.9), vjust= -0.20) +
+  ggtitle('Total Booking on SCA website and Non SCA website') + 
+  xlab('Booking Channel') + ylab('Number of Booking') + 
+  theme_bw() 
+
+# total amount of SCA and Other channels
+SCA_total <- df2 %>%
+  group_by(flag) %>%
+  summarise(total_amt = round(sum(avg_doc_price)), 0)
+
+ggplot(SCA_total, aes(flag, total_amt)) + 
+  geom_bar(stat="identity", width = 0.25) +
+  geom_text(aes(label= total_amt), position=position_dodge(width=0.9), vjust= -0.20)+
+  ggtitle('Earnings on SCA website and Non SCA website') + 
+  xlab('Booking Channel') + ylab('Earnings') + 
+  theme_bw() + 
+  scale_y_continuous(name="Earnings", limits = c(0, 200000000), labels = scales::comma)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r  echo=FALSE}
+
+```
+
+```{r  echo=FALSE}
+
+```
+
+```{r  echo=FALSE}
+
+```
+
+```{r  echo=FALSE}
+
+```
